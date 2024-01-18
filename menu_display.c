@@ -37,19 +37,21 @@ void print_title(WINDOW *win, int starty, int startx, int width, char *string, c
 void menu_display(int argc, char *argv[]) {
     // Declaration //
     ITEM **my_items;
+    ITEM *cur_item;
     MENU *my_menu;
     WINDOW *my_menu_win;
     
     char store[argc-1][4];
     int c,i;
+    char search;
     int nlines,ncols,startx,starty;
     // Declaration //
 
     // Initialize Variables //
-    nlines = 15;
-    ncols = 40;
-    starty = 5;
-    startx = 4;
+    nlines = 30;
+    ncols = 20;
+    starty = 0;
+    startx = 0;
     // Initialize Variables //
 
     // Initialize curses //
@@ -76,13 +78,14 @@ void menu_display(int argc, char *argv[]) {
     // Create Menu //
     my_menu = new_menu((ITEM**)my_items);
     // Create Menu //
-    
+   
+
     // Create Window; Set main window and sub window // 
     my_menu_win = newwin(nlines,ncols,starty,startx);
     keypad(my_menu_win,TRUE); //enables function keys
 
     set_menu_win(my_menu, my_menu_win);
-    set_menu_sub(my_menu, derwin(my_menu_win,nlines-4,ncols-2,starty-2,startx-3));
+    set_menu_sub(my_menu, derwin(my_menu_win,nlines-4,ncols-2,3,1));
     set_menu_format(my_menu, nlines-4, 1);
 
     set_menu_mark(my_menu, " * "); // mark strings to show selected items
@@ -91,10 +94,10 @@ void menu_display(int argc, char *argv[]) {
 
     // Print border around main window and title //
     box(my_menu_win,0,0);
-    print_title(my_menu_win, 1, 0, 40, "File Manager", COLOR_PAIR(1));
-    mvwaddch(my_menu_win, 2, 0, ACS_LTEE);
-    mvwhline(my_menu_win, 2, 1, ACS_HLINE, ncols-2);
-    mvwaddch(my_menu_win, 2, 39, ACS_RTEE);
+    print_title(my_menu_win, 1, startx, ncols, "File Manager", COLOR_PAIR(1));
+    mvwaddch(my_menu_win, starty+2, startx, ACS_LTEE);
+    mvwhline(my_menu_win, starty+2, startx+1, ACS_HLINE, ncols-2);
+    mvwaddch(my_menu_win, starty+2, ncols-1, ACS_RTEE);
     //mvprintw(3, 0, "F1 to exit");
     refresh();
     // Print border around main window and title //
@@ -107,14 +110,29 @@ void menu_display(int argc, char *argv[]) {
 
     
     // Traverse Menu Items //
-    while((c=getch()) != KEY_F(1)) {
+    while((c=getch()) != 'q') {
+        cur_item = current_item(my_menu);
         switch(c) {
-            case KEY_DOWN:
-                menu_driver(my_menu, REQ_DOWN_ITEM);
+            case 'j':
+                if(cur_item == my_items[argc-2])
+                    menu_driver(my_menu, REQ_FIRST_ITEM);
+                else
+                    menu_driver(my_menu, REQ_DOWN_ITEM);
                 break;
 
-            case KEY_UP:
-                menu_driver(my_menu, REQ_UP_ITEM);
+            case 'k':
+                if(cur_item == my_items[0])
+                    menu_driver(my_menu, REQ_LAST_ITEM);
+                else
+                    menu_driver(my_menu, REQ_UP_ITEM);
+                break;
+
+            case 'l':
+                menu_driver(my_menu, REQ_RIGHT_ITEM);
+                break;
+
+            case 'h':
+                menu_driver(my_menu, REQ_LEFT_ITEM);
                 break;
             
             case KEY_NPAGE:
