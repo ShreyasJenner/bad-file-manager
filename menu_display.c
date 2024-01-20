@@ -8,8 +8,12 @@
 
 // HEADER FILES //
 #include "menu_display.h"
-#include "menu_item_traversal.h"
 #include "print_title.h"
+#include "render.h"
+#include "menu_destruction.h"
+#include "window_destruction.h"
+#include "set_menu.h"
+#include "window_creation.h"
 // HEADER FILES //
 
 void menu_display(int argc, char *argv[]) {
@@ -20,7 +24,7 @@ void menu_display(int argc, char *argv[]) {
     PANEL *my_panels[3];
     
     char store[argc-1][4];
-    int c,i;
+    int c,i,cur_win_index;
     char search;
     int nlines,ncols,startx,starty;
     // Declaration //
@@ -36,13 +40,13 @@ void menu_display(int argc, char *argv[]) {
     // Initialize curses //
 
     // Initialize Variables //
-    getmaxyx(stdscr, nlines, ncols);
     starty = 0;
     startx = 0;
+    cur_win_index = 0;
     // Initialize Variables //
 
 
-    // Create Menu Items //
+    // Create Menu Items and Menu //
     my_items = (ITEM **)calloc(argc, sizeof(ITEM *));
    
     for(i=1;i<argc;i++)  {
@@ -50,32 +54,21 @@ void menu_display(int argc, char *argv[]) {
         my_items[i-1] = new_item(store[i-1], argv[i]);
     }
     my_items[argc] = (ITEM *)NULL;
-    // Create Menu Items //
+    
+    my_menu = new_menu((ITEM**)my_items);
+    // Create Menu Items and Menu //
 
     
-    // Create Menu //
-    my_menu = new_menu((ITEM**)my_items);
-    // Create Menu //
-   
-
     // Create windows and panels //
-    title_win = newwin(2, ncols, starty, startx);
-
-    my_menu_win[0] = newwin(30,ncols/3,starty+3,startx);
-    my_menu_win[1] = newwin(30,ncols/3,starty+3,startx+(ncols/3));
-    my_menu_win[2] = newwin(30,ncols/3,starty+3,3*startx+(2*ncols/3));
-   
+    getmaxyx(stdscr, nlines, ncols);
+    window_creation(ncols, nlines, startx, starty, &title_win, my_menu_win);
     for(i=0;i<3;i++)
         my_panels[i] = new_panel(my_menu_win[i]);
     // Create windows and panels //
 
 
     // sets menu main and sub windows ; sets menu mark//
-    set_menu_win(my_menu, my_menu_win[0]);
-    set_menu_sub(my_menu, derwin(my_menu_win[0],29,(ncols/3)-2,1,1));
-    set_menu_format(my_menu, 21, 1);
-
-    set_menu_mark(my_menu, "*"); // mark strings to show selected items
+    set_menu(my_menu, my_menu_win[0],ncols);
     // sets menu main and sub windows ; sets menu mark//
      
   
@@ -88,30 +81,69 @@ void menu_display(int argc, char *argv[]) {
     // Print border around main window and title //
    
     
-    // Refresh title window//
-    wrefresh(title_win);
-    // Refresh title window//
+    // Render //
+    render(title_win, my_panels, my_menu);
+    // Render //
 
 
-    // Post the menu; refresh panels //
-    post_menu(my_menu);
-    update_panels();
-    doupdate();
-    // Post the menu; refresh panels //
+    /* Main Loop */
+    while((c=getch()) != 'q') {
+        ITEM *cur_item = current_item(my_menu);
+        switch(c) {
+            case KEY_RESIZE:
+            {
+                WINDOW *old_title = title_win;
+                WINDOW **old_menu_win = my_menu_win;
+                getmaxyx(stdscr, ncols, nlines);
+                window_creation(ncols, nlines, startx, starty, &title_win, my_menu_win);
+                for(i=0;i<3;i++)
+                    replace_panel(my_panels[i],my_menu_win[i]);
+                render(title_win, my_panels, my_menu);
+                window_destruction(old_menu_win, old_title);
+                break;
+            }
 
-    
-    // Traverse Menu Items //
-    traverse(my_menu, my_menu_win, my_items, argc); 
-    // Traverse Menu Items //
+            case 'j':
+                if(cur_item == my_items[argc-2])
+                    menu_driver(my_menu, REQ_FIRST_ITEM);
+                else
+                    menu_driver(my_menu, REQ_DOWN_ITEM);
+                break;
+
+            case 'k':
+                if(cur_item == my_items[0])
+                    menu_driver(my_menu, REQ_LAST_ITEM);
+                else
+                    menu_driver(my_menu, REQ_UP_ITEM);
+                break;
+
+            case 'l':
+                cur_win_index++;
+                cur_win_index %= 3;
+                break;
+
+            case 'h':
+                cur_win_index = (cur_win_index-1+3)%3;
+                break;
+            
+            case KEY_NPAGE:
+                menu_driver(my_menu, REQ_SCR_DPAGE);
+                break;
+
+            case KEY_PPAGE:
+                menu_driver(my_menu, REQ_SCR_UPAGE);
+                break;
+        }
+        wrefresh(my_menu_win[0]);
+    }
+    /* Main Loop */
    
     
     // Free memory //
-    unpost_menu(my_menu);
-    free_menu(my_menu);
-    for(i=0;i<argc;i++)
-        free_item(my_items[i]);
+    menu_destruction(argc, my_menu, my_items);
+    window_destruction(my_menu_win,title_win);
+    // Free memory //
 
     endwin();
-    // Free memory //
 
 }

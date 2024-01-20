@@ -11,7 +11,6 @@
 
 // HEADER FILES //
 #include "menu_display.h"
-#include "menu_item_traversal.h"
 #include "print_title.h"
 // HEADER FILES //
 
