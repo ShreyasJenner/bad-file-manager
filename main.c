@@ -16,7 +16,8 @@
 
 
 int main(int argc, char *argv[]) {
-    menu_display(argc, argv);
+    char* s = menu_display(argc, argv);
 
+    printf("%s\n",s);
     return 0;
 }

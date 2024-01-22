@@ -10,12 +10,14 @@
 #include "print_title.h"
 // HEADER FILES //
 
-void menu_display(int argc, char *argv[]) {
+char* menu_display(int argc, char *argv[]) {
     // Declaration //
     ITEM **my_items;
     MENU *my_menu;
     WINDOW *my_menu_win, *title_win;
     
+    char *name;
+
     char store[argc-1][4];
     int c,i,cur_win_index;
     char search;
@@ -33,6 +35,7 @@ void menu_display(int argc, char *argv[]) {
     // Initialize curses //
 
     // Initialize Variables //
+    getmaxyx(stdscr, nlines, ncols);
     starty = 0;
     startx = 0;
     cur_win_index = 0;
@@ -45,26 +48,29 @@ void menu_display(int argc, char *argv[]) {
     for(i=1;i<argc;i++)  {
         sprintf(store[i-1],"%d",i);
         my_items[i-1] = new_item(store[i-1], argv[i]);
+        set_item_userptr(my_items[i-1], name);
     }
+    my_items[argc] = NULL;
     
     my_menu = new_menu((ITEM**)my_items);
     // Create Menu Items and Menu //
 
     
     // Create windows //
-    getmaxyx(stdscr, nlines, ncols);
 
-    my_menu_win = newwin(10, 20, starty+3, startx);
     title_win = newwin(3, ncols, starty, startx);
+    my_menu_win = newwin(nlines-3, ncols, starty+3, startx);
 
     // Create windows //
 
 
     // sets menu main and sub windows ; sets menu mark//
     menu_opts_off(my_menu, O_NONCYCLIC);
+    set_menu_spacing(my_menu, 0, 0, ncols/2);
     set_menu_win(my_menu, my_menu_win);
-    set_menu_sub(my_menu, derwin(my_menu_win,6,20,1,1));
+    set_menu_sub(my_menu, derwin(my_menu_win,nlines-4,ncols-10,1,1));
 
+    set_menu_format(my_menu, nlines-5, 2);
     set_menu_mark(my_menu, "*");
     // sets menu main and sub windows ; sets menu mark//
      
@@ -86,7 +92,6 @@ void menu_display(int argc, char *argv[]) {
 
     /* Main Loop */
     while((c=getch()) != 'q') {
-        ITEM *cur_item = current_item(my_menu);
         switch(c) {
             case 'j':
                 menu_driver(my_menu, REQ_DOWN_ITEM);
@@ -103,6 +108,14 @@ void menu_display(int argc, char *argv[]) {
             case 'h':
                 menu_driver(my_menu, REQ_LEFT_ITEM);
                 break;
+
+            case 10:
+                {
+                    ITEM *cur = current_item(my_menu);
+                    name = (char *)item_description(cur);
+                    goto exit_loop;
+                }
+                break;
             
             case KEY_NPAGE:
                 menu_driver(my_menu, REQ_SCR_DPAGE);
@@ -115,7 +128,8 @@ void menu_display(int argc, char *argv[]) {
         wrefresh(my_menu_win);
     }
     /* Main Loop */
-   
+  
+exit_loop:
     
     // Free memory //
     unpost_menu(my_menu);
@@ -127,4 +141,6 @@ void menu_display(int argc, char *argv[]) {
 
     endwin();
 
+    return name;
 }
+
