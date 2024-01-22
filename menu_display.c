@@ -10,22 +10,24 @@
 #include "print_title.h"
 // HEADER FILES //
 
-char* menu_display(int argc, char *argv[]) {
+char* menu_display(int argc, char **argv) {
     // Declaration //
     ITEM **my_items;
     MENU *my_menu;
     WINDOW *my_menu_win, *title_win;
     
-    char *name;
+    char *name=".";
 
-    char store[argc-1][4];
+    char store[argc][4];
     int c,i,cur_win_index;
     char search;
     int nlines,ncols,startx,starty;
     // Declaration //
 
     // Initialize curses //
-    initscr();
+    FILE *tty = fopen("/dev/tty", "r+");
+    SCREEN *screen = newterm(NULL, tty, tty);
+    set_term(screen);
     start_color();
     cbreak();
     noecho();
@@ -45,10 +47,10 @@ char* menu_display(int argc, char *argv[]) {
     // Create Menu Items and Menu //
     my_items = (ITEM **)calloc(argc, sizeof(ITEM *));
    
-    for(i=1;i<argc;i++)  {
-        sprintf(store[i-1],"%d",i);
-        my_items[i-1] = new_item(store[i-1], argv[i]);
-        set_item_userptr(my_items[i-1], name);
+    for(i=0;i<argc;i++)  {
+        sprintf(store[i],"%d",i+1);
+        my_items[i] = new_item(store[i], argv[i]);
+        set_item_userptr(my_items[i], name);
     }
     my_items[argc] = NULL;
     
@@ -140,7 +142,7 @@ exit_loop:
     // Free memory //
 
     endwin();
-
+    fclose(tty);
     return name;
 }
 
