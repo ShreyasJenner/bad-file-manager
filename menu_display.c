@@ -34,6 +34,8 @@ char* menu_display(int argc, char **argv) {
     curs_set(0);
     keypad(stdscr,TRUE);
     init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
     // Initialize curses //
 
     // Initialize Variables //
@@ -49,7 +51,7 @@ char* menu_display(int argc, char **argv) {
    
     for(i=0;i<argc;i++)  {
         sprintf(store[i],"%d",i+1);
-        my_items[i] = new_item(store[i], argv[i]);
+        my_items[i] = new_item(store[i], &argv[i][1]);
         set_item_userptr(my_items[i], name);
     }
     my_items[argc] = (ITEM *)NULL;
@@ -62,7 +64,7 @@ char* menu_display(int argc, char **argv) {
 
     title_win = newwin(3, ncols, starty, startx);
     my_menu_win = newwin(nlines-3, ncols, starty+3, startx);
-    my_menu_sub_win = derwin(my_menu_win,nlines-4,ncols-10,1,1);
+    my_menu_sub_win = derwin(my_menu_win,nlines-4,ncols-10,1,3);
 
     // Create windows //
     
@@ -88,6 +90,20 @@ char* menu_display(int argc, char **argv) {
     
     // Render //
     wrefresh(title_win);
+
+    for(i=0;i<argc;i++) {
+        if(argv[i][0] == 'D')
+            wattron(my_menu_win,COLOR_PAIR(2));
+        else
+            wattron(my_menu_win,COLOR_PAIR(3));
+
+        mvwprintw(my_menu_win,1+i,1,"%c",argv[i][0]);
+
+        if(argv[i][0] == 'D')
+            wattroff(my_menu_win,COLOR_PAIR(2));
+        else
+            wattroff(my_menu_win,COLOR_PAIR(3));
+    }
 
     post_menu(my_menu);
     wrefresh(my_menu_win);
