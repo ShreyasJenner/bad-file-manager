@@ -19,15 +19,30 @@
 int main() {
     int argc,i;
     scanf("%d",&argc);
-    
     char **argv = (char **)(calloc(argc,sizeof(char*)));
 
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) { }
+
     for(i=0;i<argc;i++) {
-        argv[i] = calloc(1,sizeof(char)*10);
-        scanf("%s",argv[i]);
+        //printf("i=%d\n",i);
+        argv[i] = calloc(1,sizeof(char)*100);
+        scanf("%[^\n]%*c",argv[i]);
     }
-    char* s = menu_display(argc, argv);
+
+    /*
+    for(i=0;i<argc;i++) {
+        printf("%s\n",argv[i]);
+    }
+    */
+   
+    char *s = menu_display(argc, argv);
 
     printf("%s\n",s);
+
+    for(i=0;i<argc;i++) {
+        free(argv[i]);
+    }
+    free(argv);
     return 0;
 }

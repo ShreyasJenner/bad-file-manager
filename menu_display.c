@@ -14,7 +14,7 @@ char* menu_display(int argc, char **argv) {
     // Declaration //
     ITEM **my_items;
     MENU *my_menu;
-    WINDOW *my_menu_win, *title_win;
+    WINDOW *my_menu_win, *title_win,*my_menu_sub_win;
     
     char *name=".";
 
@@ -45,34 +45,36 @@ char* menu_display(int argc, char **argv) {
 
 
     // Create Menu Items and Menu //
-    my_items = (ITEM **)calloc(argc, sizeof(ITEM *));
+    my_items = (ITEM **)calloc(argc+1, sizeof(ITEM *));
    
     for(i=0;i<argc;i++)  {
         sprintf(store[i],"%d",i+1);
         my_items[i] = new_item(store[i], argv[i]);
         set_item_userptr(my_items[i], name);
     }
-    my_items[argc] = NULL;
+    my_items[argc] = (ITEM *)NULL;
     
     my_menu = new_menu((ITEM**)my_items);
     // Create Menu Items and Menu //
-
+    
     
     // Create windows //
 
     title_win = newwin(3, ncols, starty, startx);
     my_menu_win = newwin(nlines-3, ncols, starty+3, startx);
+    my_menu_sub_win = derwin(my_menu_win,nlines-4,ncols-10,1,1);
 
     // Create windows //
-
+    
 
     // sets menu main and sub windows ; sets menu mark//
     menu_opts_off(my_menu, O_NONCYCLIC);
     set_menu_spacing(my_menu, 0, 0, ncols/2);
     set_menu_win(my_menu, my_menu_win);
-    set_menu_sub(my_menu, derwin(my_menu_win,nlines-4,ncols-10,1,1));
+    set_menu_sub(my_menu, my_menu_sub_win);
 
-    set_menu_format(my_menu, nlines-5, 2);
+
+    set_menu_format(my_menu, nlines-5, 1);
     set_menu_mark(my_menu, "*");
     // sets menu main and sub windows ; sets menu mark//
      
@@ -93,7 +95,9 @@ char* menu_display(int argc, char **argv) {
 
 
     /* Main Loop */
-    while((c=getch()) != 'q') {
+    c = 'a';
+    while(c != 'q') {
+        c = getch();
         switch(c) {
             case 'j':
                 menu_driver(my_menu, REQ_DOWN_ITEM);
@@ -115,7 +119,7 @@ char* menu_display(int argc, char **argv) {
                 {
                     ITEM *cur = current_item(my_menu);
                     name = (char *)item_description(cur);
-                    goto exit_loop;
+                    c = 'q';
                 }
                 break;
             
@@ -127,21 +131,26 @@ char* menu_display(int argc, char **argv) {
                 menu_driver(my_menu, REQ_SCR_UPAGE);
                 break;
         }
+
         wrefresh(my_menu_win);
     }
     /* Main Loop */
   
-exit_loop:
+    
     
     // Free memory //
     unpost_menu(my_menu);
     free_menu(my_menu);
     for(i=0;i<argc;i++)
         free_item(my_items[i]);
-
+    free(my_items);
+    delwin(my_menu_sub_win);
+    delwin(my_menu_win);
+    delwin(title_win);
+    delscreen(screen);
     // Free memory //
 
-    endwin();
+    //endwin();
     fclose(tty);
     return name;
 }
