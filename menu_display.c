@@ -131,6 +131,14 @@ char* menu_display(int argc, char **argv) {
                 menu_driver(my_menu, REQ_LEFT_ITEM);
                 break;
 
+            case 'g':
+                menu_driver(my_menu, REQ_FIRST_ITEM);
+                break;
+
+            case 'G':
+                menu_driver(my_menu, REQ_LAST_ITEM);
+                break;
+
             case 10:
                 {
                     ITEM *cur = current_item(my_menu);
@@ -138,13 +146,15 @@ char* menu_display(int argc, char **argv) {
                     c = 'q';
                 }
                 break;
-            
-            case KEY_NPAGE:
-                menu_driver(my_menu, REQ_SCR_DPAGE);
-                break;
 
-            case KEY_PPAGE:
-                menu_driver(my_menu, REQ_SCR_UPAGE);
+            case KEY_RESIZE:
+                c='q';
+                name = "1R"; //code for resize terminal
+                break;
+           
+            case KEY_BACKSPACE:
+                name = "..";
+                c = 'q';
                 break;
         }
 

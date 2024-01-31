@@ -8,3 +8,5 @@ used by file-manager
 
 ### To-do:
 - [x] add color support for directories
+- [x] re-render when resizing terminal
+- [ ] search support
