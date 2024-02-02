@@ -143,6 +143,11 @@ char* menu_display(int argc, char **argv) {
                 menu_driver(my_menu, REQ_LAST_ITEM);
                 break;
 
+            case 'a':
+                name = "a/a";
+                c = 'q';
+                break;
+
             case 10:
                 {
                     ITEM *cur = current_item(my_menu);
