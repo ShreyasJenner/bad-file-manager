@@ -10,6 +10,10 @@
 #include "print_title.h"
 // HEADER FILES //
 
+int min(int a, int b) {
+    return a<b?a:b;
+}
+
 char* menu_display(int argc, char **argv) {
     // Declaration //
     ITEM **my_items;
@@ -19,7 +23,7 @@ char* menu_display(int argc, char **argv) {
     char *name=".";
 
     char store[argc][4];
-    int c,i,cur_win_index;
+    int c,i,j,cur_win_index;
     char search;
     int nlines,ncols,startx,starty;
     // Declaration //
@@ -91,13 +95,13 @@ char* menu_display(int argc, char **argv) {
     // Render //
     wrefresh(title_win);
 
-    for(i=0;i<argc;i++) {
+    for(i=0,j=1;j<=min(argc,nlines-5);i++,j++) {
         if(argv[i][0] == 'D')
             wattron(my_menu_win,COLOR_PAIR(2));
         else
             wattron(my_menu_win,COLOR_PAIR(3));
 
-        mvwprintw(my_menu_win,1+i,1,"%c",argv[i][0]);
+        mvwprintw(my_menu_win,j,1,"%c",argv[i][0]);
 
         if(argv[i][0] == 'D')
             wattroff(my_menu_win,COLOR_PAIR(2));
@@ -157,7 +161,23 @@ char* menu_display(int argc, char **argv) {
                 c = 'q';
                 break;
         }
+        
+        // below for loop dynamically updates the file or directory indicator
+        int start = top_row(my_menu);
+        for(i=start,j=1;j<=min(argc,nlines-5);i++,j++) {
+            if(argv[i][0] == 'D')
+                wattron(my_menu_win,COLOR_PAIR(2));
+            else
+                wattron(my_menu_win,COLOR_PAIR(3));
 
+            mvwprintw(my_menu_win,j,1,"%c",argv[i][0]);
+
+            if(argv[i][0] == 'D')
+                wattroff(my_menu_win,COLOR_PAIR(2));
+            else
+                wattroff(my_menu_win,COLOR_PAIR(3));
+        }
+        
         wrefresh(my_menu_win);
     }
     /* Main Loop */
