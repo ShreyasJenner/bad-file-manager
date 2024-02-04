@@ -1,36 +1,58 @@
-// STANDARD HEADER FILES //
+/* STANDARD HEADER FILES */
 #include <stdio.h>
+#include <form.h>
 #include <menu.h>
 #include <curses.h>
 #include <stdlib.h>
-// STANDARD HEADER FILES //
+/* STANDARD HEADER FILES */
 
-// HEADER FILES //
+/* HEADER FILES */
 #include "menu_display.h"
 #include "print_title.h"
-// HEADER FILES //
+#include "store_item_values.h"
+#include "menu_opts_set.h"
+#include "dynamic_file_indicator.h"
+#include "free_memory.h"
+#include "main_loop.h"
+/* HEADER FILES */
+
 
 int min(int a, int b) {
     return a<b?a:b;
 }
 
 char* menu_display(int argc, char **argv) {
-    // Declaration //
+
+    /* Declaration */
     ITEM **my_items;
     MENU *my_menu;
-    WINDOW *my_menu_win, *title_win,*my_menu_sub_win;
-    
+    WINDOW *title_win;
+    WINDOW *my_menu_win, *my_menu_sub_win;
+
+    WINDOW *form_win, *form_sub_win;
+    FIELD **field;
+    FORM *form;
+
+    FILE *tty;
+    SCREEN *screen;
+
     char *name=".";
-
     char store[argc][4];
-    int c,i,j,cur_win_index;
     char search;
+    int c,i,j,end;
     int nlines,ncols,startx,starty;
-    // Declaration //
+    int title_win_height, title_win_width;
+    int menu_win_height, menu_win_width;
+    int menu_sub_win_height, menu_sub_win_width;
+    int menu_format_row, menu_format_col;
+    int form_win_height, form_win_width;
+    int form_sub_win_height, form_sub_win_width;
+    /* Declaration */
 
-    // Initialize curses //
-    FILE *tty = fopen("/dev/tty", "r+");
-    SCREEN *screen = newterm(NULL, tty, tty);
+
+    /* Initialize curses */
+    tty = fopen("/dev/tty", "r+");
+    screen = newterm(NULL, tty, tty);
     set_term(screen);
     start_color();
     cbreak();
@@ -40,169 +62,114 @@ char* menu_display(int argc, char **argv) {
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     init_pair(3, COLOR_BLUE, COLOR_BLACK);
-    // Initialize curses //
+    /* Initialize curses */
 
-    // Initialize Variables //
+    /* Initialize Variables */
     getmaxyx(stdscr, nlines, ncols);
     starty = 0;
     startx = 0;
-    cur_win_index = 0;
-    // Initialize Variables //
+    title_win_height = 3;
+    title_win_width = ncols;
+    menu_win_height = nlines-6;
+    menu_win_width = ncols;
+    menu_sub_win_height = menu_win_height-1;
+    menu_sub_win_width = ncols-10;
+    menu_format_row = menu_sub_win_height-1;
+    menu_format_col = 1;
+    form_win_height = 3;
+    form_win_width = ncols;
+    form_sub_win_height = form_win_height-1;
+    form_sub_win_width = form_win_width-1;
+    /* Initialize Variables */
 
-
-    // Create Menu Items and Menu //
+    /* Create Menu Items and Menu */
     my_items = (ITEM **)calloc(argc+1, sizeof(ITEM *));
-   
-    for(i=0;i<argc;i++)  {
-        sprintf(store[i],"%d",i+1);
-        my_items[i] = new_item(store[i], &argv[i][1]);
-        set_item_userptr(my_items[i], name);
-    }
-    my_items[argc] = (ITEM *)NULL;
-    
+    store_item_values(my_items, argc, argv, store);
     my_menu = new_menu((ITEM**)my_items);
-    // Create Menu Items and Menu //
+    /* Create Menu Items and Menu */
+
+    /* Create windows */
+    title_win = newwin(title_win_height, title_win_width, starty, startx);
+    my_menu_win = newwin(menu_win_height, menu_win_width, starty+3, startx);
+    my_menu_sub_win = derwin(my_menu_win,menu_sub_win_height, menu_sub_win_width,starty+1,startx+3);
+    /* Create windows */
     
+    /* Set menu options and connect to windows */
+    menu_opts_set(my_menu, my_menu_win, my_menu_sub_win, menu_format_row, menu_format_col);
+    /* Set menu options and connect to windows */
+
+
     
-    // Create windows //
+    /* Create Form */
+    form_win = newwin(form_win_height, form_win_width, nlines-3,startx);
+    form_sub_win = derwin(form_win, form_sub_win_height, form_sub_win_width, starty+1,startx+1);
+    field = (FIELD **)calloc(2,sizeof(FIELD *));
+    field[0] = new_field(1,10,4,18,0,0);
+    field[1] = NULL;
+    move_field(field[0],nlines-2,startx+1);
+    /* Create Form */
 
-    title_win = newwin(3, ncols, starty, startx);
-    my_menu_win = newwin(nlines-3, ncols, starty+3, startx);
-    my_menu_sub_win = derwin(my_menu_win,nlines-4,ncols-10,1,3);
+    /* Form options */
+    set_field_back(field[0], A_UNDERLINE);
+    form = new_form(field);
 
-    // Create windows //
-    
-
-    // sets menu main and sub windows ; sets menu mark//
-    menu_opts_off(my_menu, O_NONCYCLIC);
-    set_menu_spacing(my_menu, 0, 0, ncols/2);
-    set_menu_win(my_menu, my_menu_win);
-    set_menu_sub(my_menu, my_menu_sub_win);
+    //set_form_win(form,form_win);
+    //set_form_win(form,form_sub_win);
+    /* Form options */
 
 
-    set_menu_format(my_menu, nlines-5, 1);
-    set_menu_mark(my_menu, "*");
-    // sets menu main and sub windows ; sets menu mark//
-     
-  
-    // Print border around main window; add title//
+    /* Print border around main window; add title */
     print_title(title_win, 1, startx, ncols, "File Manager", COLOR_PAIR(1));
-   
     box(my_menu_win, 0, 0);
-    // Print border around main window and title //
-   
+    //box(form_win, 0, 0);
+    /* Print border around main window; add title */
     
-    // Render //
-    wrefresh(title_win);
-
-    for(i=0,j=1;j<=min(argc,nlines-5);i++,j++) {
-        if(argv[i][0] == 'D')
-            wattron(my_menu_win,COLOR_PAIR(2));
-        else
-            wattron(my_menu_win,COLOR_PAIR(3));
-
-        mvwprintw(my_menu_win,j,1,"%c",argv[i][0]);
-
-        if(argv[i][0] == 'D')
-            wattroff(my_menu_win,COLOR_PAIR(2));
-        else
-            wattroff(my_menu_win,COLOR_PAIR(3));
-    }
+    /* Render */ 
+    end = min(argc,menu_format_row);
+    dynamic_file_indicator(my_menu_win, 0, end, argv);
 
     post_menu(my_menu);
+    post_form(form);
+    wrefresh(title_win);
     wrefresh(my_menu_win);
-    // Render //
+    wrefresh(form_win);
+    /* Render */ 
 
 
     /* Main Loop */
     c = 'a';
     while(c != 'q') {
-        c = getch();
-        switch(c) {
-            case 'j':
-                menu_driver(my_menu, REQ_DOWN_ITEM);
-                break;
-
-            case 'k':
-                menu_driver(my_menu, REQ_UP_ITEM);
-                break;
-
-            case 'l':
-                menu_driver(my_menu, REQ_RIGHT_ITEM);
-                break;
-
-            case 'h':
-                menu_driver(my_menu, REQ_LEFT_ITEM);
-                break;
-
-            case 'g':
-                menu_driver(my_menu, REQ_FIRST_ITEM);
-                break;
-
-            case 'G':
-                menu_driver(my_menu, REQ_LAST_ITEM);
-                break;
-
-            case 'a':
-                name = "a/a";
-                c = 'q';
-                break;
-
-            case 10:
-                {
-                    ITEM *cur = current_item(my_menu);
-                    name = (char *)item_description(cur);
-                    c = 'q';
-                }
-                break;
-
-            case KEY_RESIZE:
-                c='q';
-                name = "1R"; //code for resize terminal
-                break;
-           
-            case KEY_BACKSPACE:
-                name = "..";
-                c = 'q';
-                break;
-        }
-        
-        // below for loop dynamically updates the file or directory indicator
         int start = top_row(my_menu);
-        for(i=start,j=1;j<=min(argc,nlines-5);i++,j++) {
-            if(argv[i][0] == 'D')
-                wattron(my_menu_win,COLOR_PAIR(2));
-            else
-                wattron(my_menu_win,COLOR_PAIR(3));
-
-            mvwprintw(my_menu_win,j,1,"%c",argv[i][0]);
-
-            if(argv[i][0] == 'D')
-                wattroff(my_menu_win,COLOR_PAIR(2));
-            else
-                wattroff(my_menu_win,COLOR_PAIR(3));
-        }
-        
+        dynamic_file_indicator(my_menu_win, start, end, argv);
         wrefresh(my_menu_win);
+        c = getch();
+        if(c=='/') {
+            while(c!=10) {
+                c = getch();
+                mvwprintw(title_win, 1,1 , "%c", c);
+                wrefresh(title_win);
+                if(c==KEY_BACKSPACE)
+                    form_driver(form, REQ_DEL_PREV);
+                else
+                    form_driver(form, c);
+                wrefresh(form_win);
+            }
+        }
+        else
+            name = main_loop(my_menu,form,form_win, &c);
     }
     /* Main Loop */
   
     
     
-    // Free memory //
-    unpost_menu(my_menu);
-    free_menu(my_menu);
-    for(i=0;i<argc;i++)
-        free_item(my_items[i]);
-    free(my_items);
-    delwin(my_menu_sub_win);
-    delwin(my_menu_win);
-    delwin(title_win);
-    delscreen(screen);
-    // Free memory //
+    /* Free memory */
+    unpost_form(form);
+    free_form(form);
+    free_field(field[0]);
+    free_field(field[1]);
+    free_memory(my_menu, title_win, my_menu_win, my_menu_sub_win, my_items, screen,  tty, argc);
+    /* Free memory */
 
-    //endwin();
-    fclose(tty);
     return name;
 }
 
