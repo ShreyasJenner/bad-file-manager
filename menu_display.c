@@ -104,7 +104,7 @@ char* menu_display(int argc, char **argv) {
     form_win = newwin(form_win_height, form_win_width, nlines-3,startx);
     form_sub_win = derwin(form_win, form_sub_win_height, form_sub_win_width, starty+1,startx+1);
     field = (FIELD **)calloc(2,sizeof(FIELD *));
-    field[0] = new_field(1,10,4,18,0,0);
+    field[0] = new_field(1,ncols/2,4,18,0,0);
     field[1] = NULL;
     move_field(field[0],nlines-2,startx+1);
     /* Create Form */
@@ -117,6 +117,8 @@ char* menu_display(int argc, char **argv) {
     //set_form_win(form,form_sub_win);
     /* Form options */
 
+    post_form(form);
+    wrefresh(form_win);
 
     /* Print border around main window; add title */
     print_title(title_win, 1, startx, ncols, "File Manager", COLOR_PAIR(1));
@@ -129,10 +131,8 @@ char* menu_display(int argc, char **argv) {
     dynamic_file_indicator(my_menu_win, 0, end, argv);
 
     post_menu(my_menu);
-    post_form(form);
     wrefresh(title_win);
     wrefresh(my_menu_win);
-    wrefresh(form_win);
     /* Render */ 
 
 
@@ -144,9 +144,10 @@ char* menu_display(int argc, char **argv) {
         wrefresh(my_menu_win);
         c = getch();
         if(c=='/') {
+            curs_set(1);
             while(c!=10) {
                 c = getch();
-                mvwprintw(title_win, 1,1 , "%c", c);
+                //mvwprintw(title_win, 1,1 , "%c", c);
                 wrefresh(title_win);
                 if(c==KEY_BACKSPACE)
                     form_driver(form, REQ_DEL_PREV);
@@ -154,6 +155,7 @@ char* menu_display(int argc, char **argv) {
                     form_driver(form, c);
                 wrefresh(form_win);
             }
+            curs_set(0);
         }
         else
             name = main_loop(my_menu,form,form_win, &c);
