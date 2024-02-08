@@ -14,6 +14,8 @@
 #include "dynamic_file_indicator.h"
 #include "free_memory.h"
 #include "main_loop.h"
+#include "fill_search_form.h"
+#include "regex_match.h"
 /* HEADER FILES */
 
 
@@ -24,10 +26,10 @@ int min(int a, int b) {
 char* menu_display(int argc, char **argv) {
 
     /* Declaration */
-    ITEM **my_items;
-    MENU *my_menu;
+    ITEM **items;
+    MENU *menu;
     WINDOW *title_win;
-    WINDOW *my_menu_win, *my_menu_sub_win;
+    WINDOW *menu_win, *menu_sub_win;
 
     WINDOW *form_win, *form_sub_win;
     FIELD **field;
@@ -36,10 +38,10 @@ char* menu_display(int argc, char **argv) {
     FILE *tty;
     SCREEN *screen;
 
-    char *name=".";
+    char *name=".", *buff;
     char store[argc][4];
     char search;
-    int c,i,j,end;
+    int c,i,j,end,search_index;
     int nlines,ncols,startx,starty;
     int title_win_height, title_win_width;
     int menu_win_height, menu_win_width;
@@ -68,6 +70,7 @@ char* menu_display(int argc, char **argv) {
     getmaxyx(stdscr, nlines, ncols);
     starty = 0;
     startx = 0;
+    search_index = 0;
     title_win_height = 3;
     title_win_width = ncols;
     menu_win_height = nlines-6;
@@ -83,19 +86,19 @@ char* menu_display(int argc, char **argv) {
     /* Initialize Variables */
 
     /* Create Menu Items and Menu */
-    my_items = (ITEM **)calloc(argc+1, sizeof(ITEM *));
-    store_item_values(my_items, argc, argv, store);
-    my_menu = new_menu((ITEM**)my_items);
+    items = (ITEM **)calloc(argc+1, sizeof(ITEM *));
+    store_item_values(items, argc, argv, store);
+    menu = new_menu((ITEM**)items);
     /* Create Menu Items and Menu */
 
     /* Create windows */
     title_win = newwin(title_win_height, title_win_width, starty, startx);
-    my_menu_win = newwin(menu_win_height, menu_win_width, starty+3, startx);
-    my_menu_sub_win = derwin(my_menu_win,menu_sub_win_height, menu_sub_win_width,starty+1,startx+3);
+    menu_win = newwin(menu_win_height, menu_win_width, starty+3, startx);
+    menu_sub_win = derwin(menu_win,menu_sub_win_height, menu_sub_win_width,starty+1,startx+3);
     /* Create windows */
     
     /* Set menu options and connect to windows */
-    menu_opts_set(my_menu, my_menu_win, my_menu_sub_win, menu_format_row, menu_format_col);
+    menu_opts_set(menu, menu_win, menu_sub_win, menu_format_row, menu_format_col);
     /* Set menu options and connect to windows */
 
 
@@ -122,43 +125,39 @@ char* menu_display(int argc, char **argv) {
 
     /* Print border around main window; add title */
     print_title(title_win, 1, startx, ncols, "File Manager", COLOR_PAIR(1));
-    box(my_menu_win, 0, 0);
+    box(menu_win, 0, 0);
     //box(form_win, 0, 0);
     /* Print border around main window; add title */
     
     /* Render */ 
     end = min(argc,menu_format_row);
-    dynamic_file_indicator(my_menu_win, 0, end, argv);
+    dynamic_file_indicator(menu_win, 0, end, argv);
 
-    post_menu(my_menu);
+    post_menu(menu);
     wrefresh(title_win);
-    wrefresh(my_menu_win);
+    wrefresh(menu_win);
     /* Render */ 
 
 
     /* Main Loop */
     c = 'a';
     while(c != 'q') {
-        int start = top_row(my_menu);
-        dynamic_file_indicator(my_menu_win, start, end, argv);
-        wrefresh(my_menu_win);
+        int start = top_row(menu);
+        dynamic_file_indicator(menu_win, start, end, argv);
+        wrefresh(menu_win);
         c = getch();
         if(c=='/') {
+            move(nlines-2,startx+1);
             curs_set(1);
-            while(c!=10) {
-                c = getch();
-                //mvwprintw(title_win, 1,1 , "%c", c);
-                wrefresh(title_win);
-                if(c==KEY_BACKSPACE)
-                    form_driver(form, REQ_DEL_PREV);
-                else
-                    form_driver(form, c);
-                wrefresh(form_win);
-            }
+            fill_search_form(form,form_win);
             curs_set(0);
+
+            buff = field_buffer(field[0],0);
+            regex_match(buff,argv,argc,item_index(current_item(menu)),menu,menu_win,items);
+            
         }
         else
-            name = main_loop(my_menu,form,form_win, &c);
+            name = main_loop(menu,form,form_win, &c);
     }
     /* Main Loop */
   
@@ -169,7 +168,7 @@ char* menu_display(int argc, char **argv) {
     free_form(form);
     free_field(field[0]);
     free_field(field[1]);
-    free_memory(my_menu, title_win, my_menu_win, my_menu_sub_win, my_items, screen,  tty, argc);
+    free_memory(menu, title_win, menu_win, menu_sub_win, items, screen,  tty, argc);
     /* Free memory */
 
     return name;
