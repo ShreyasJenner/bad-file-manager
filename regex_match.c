@@ -20,7 +20,7 @@ void trim(char *str, char *str1)
     str1[k] = '\0';
 }
 
-void regex_match(char *str,char **argv, int argc, int start,MENU *menu, WINDOW *menu_win, ITEM **items) {
+int regex_match(char *str,char **argv, int argc, int start,MENU *menu, WINDOW *menu_win, ITEM **items) {
     char str2[30];
     int value,i=start,c='n',counter;
     regex_t reg;
@@ -29,7 +29,8 @@ void regex_match(char *str,char **argv, int argc, int start,MENU *menu, WINDOW *
 
     value = regcomp(&reg, str2, 0);
 
-    while(c!=27) {
+    //FILE *log = fopen("log","w");
+    while(c!='q') {
         switch(c) {
             case 'n':
                 i++;
@@ -38,13 +39,12 @@ void regex_match(char *str,char **argv, int argc, int start,MENU *menu, WINDOW *
                 while((value=regexec(&reg,&argv[i][1],0,NULL,0))==REG_NOMATCH) {
                     counter++;
                     if(counter==argc)
-                        return ;
+                        return -1;
                     i++;
                     i %= argc;
                 }
                 break;
 
-            /*
             case 'b':
                 i--;
                 i %= argc;
@@ -52,12 +52,13 @@ void regex_match(char *str,char **argv, int argc, int start,MENU *menu, WINDOW *
                 while((value=regexec(&reg,&argv[i][1],0,NULL,0))==REG_NOMATCH) {
                     counter++;
                     if(counter==argc)
-                        return ;
+                        return -1;
                     i--;
-                    i %= argc;
+                    if(i<0)
+                        i = argc-1;
+                    //fprintf(log,"%d",i);
                 }
             break;
-            */
         }
 
         set_current_item(menu, items[i]);
@@ -65,5 +66,7 @@ void regex_match(char *str,char **argv, int argc, int start,MENU *menu, WINDOW *
         
         c = getch();
     }
+    return 1;
+    //fclose(log);
 }
 

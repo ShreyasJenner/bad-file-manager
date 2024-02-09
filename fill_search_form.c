@@ -3,6 +3,7 @@
 
 void fill_search_form(FORM *form, WINDOW *form_win) {
     int c;
+    curs_set(1);
     form_driver(form, REQ_CLR_FIELD);
             while(c!=10) {
                 c = getch();
@@ -16,4 +17,5 @@ void fill_search_form(FORM *form, WINDOW *form_win) {
                 wrefresh(form_win);
             }
     form_driver(form, REQ_VALIDATION);
+    curs_set(0);
 }

@@ -16,6 +16,7 @@
 #include "main_loop.h"
 #include "fill_search_form.h"
 #include "regex_match.h"
+#include "search_status.h"
 /* HEADER FILES */
 
 
@@ -147,17 +148,18 @@ char* menu_display(int argc, char **argv) {
         wrefresh(menu_win);
         c = getch();
         if(c=='/') {
-            move(nlines-2,startx+1);
-            curs_set(1);
-            fill_search_form(form,form_win);
-            curs_set(0);
 
-            buff = field_buffer(field[0],0);
-            regex_match(buff,argv,argc,item_index(current_item(menu)),menu,menu_win,items);
-            
+            search_status(title_win,0);
+            move(nlines-2,startx+1);
+            fill_search_form(form,form_win);
+
+            search_index = regex_match(field_buffer(field[0],0),argv,argc,item_index(current_item(menu)),menu,menu_win,items);
+
+            search_status(title_win,search_index);
         }
-        else
+        else {
             name = main_loop(menu,form,form_win, &c);
+        }
     }
     /* Main Loop */
   
