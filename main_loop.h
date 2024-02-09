@@ -4,6 +4,6 @@
 #include <menu.h> 
 #include <form.h>
 
-char* main_loop(MENU *menu, FORM *form, WINDOW *win, int* c);
+char* main_loop(WINDOW *menu_win, WINDOW *title_win, MENU *menu, ITEM **items, FORM *form, WINDOW *form_win, FIELD **field, int* c, int argc, char **argv, int nlines, int startx, int ncols);
 
 #endif

@@ -1,7 +1,18 @@
+#include <menu.h>
+#include <string.h>
 
+#include "search_status.h"
 #include "main_loop.h"
+#include "regex_match.h"
+#include "fill_search_form.h"
+#include "trim.h"
 
-char* main_loop(MENU *menu, FORM *form, WINDOW *form_win, int* c) {
+
+char* main_loop(WINDOW *menu_win, WINDOW *title_win, MENU *menu, ITEM **items, FORM *form, WINDOW *form_win, FIELD **field, int* c, int argc, char **argv, int nlines, int startx, int ncols) {
+    
+    int search_index;
+    char buff[(ncols/2)+1];
+    FILE *pot = fopen("/dev/pts/1","w");
 
     switch(*c) {
         case 'j':
@@ -34,14 +45,34 @@ char* main_loop(MENU *menu, FORM *form, WINDOW *form_win, int* c) {
             break;
 
         case '/':
-            while(*c!=10) {
-                *c = getch();
-                if(*c == KEY_BACKSPACE)
-                    form_driver(form, REQ_DEL_PREV);
-                else
-                    form_driver(form, *c);
-                mvwprintw(form_win,1,1,"%c",*c);
+            search_status(title_win,0);
+            move(nlines-2,startx+1);
+            fill_search_form(form, form_win);
+            break;
+
+        case 'n':
+            strcpy(buff,field_buffer(field[0],0));
+            trim(field_buffer(field[0],0),buff);
+
+            search_index = regex_match_n(buff,argc,argv,item_index(current_item(menu))+1);
+
+            if(search_index!=-1) {
+                set_current_item(menu, items[search_index]);
+                wrefresh(menu_win);
             }
+            search_status(title_win, search_index);
+            break;
+
+        case 'b':
+            strcpy(buff,field_buffer(field[0],0));
+            trim(field_buffer(field[0],0),buff);
+
+            search_index = regex_match_b(buff,argc,argv,item_index(current_item(menu))-1);
+            if(search_index!=-1) {
+                set_current_item(menu, items[search_index]);
+                wrefresh(menu_win);
+            }
+            search_status(title_win, search_index);
             break;
 
         case 10:
@@ -64,4 +95,5 @@ char* main_loop(MENU *menu, FORM *form, WINDOW *form_win, int* c) {
             return ".";
             break;
     }
+    fclose(pot);
 }

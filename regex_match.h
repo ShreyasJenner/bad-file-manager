@@ -3,5 +3,7 @@
 
 void trim(char *str, char *str1);
 
-int regex_match(char *str,char **argv, int argc, int start, MENU *menu, WINDOW *menu_win, ITEM **items);
+int regex_match_n(char *str, int argc, char **argv, int start);
+
+int regex_match_b(char *str, int argc, char **argv, int start);
 #endif

@@ -147,19 +147,7 @@ char* menu_display(int argc, char **argv) {
         dynamic_file_indicator(menu_win, start, end, argv);
         wrefresh(menu_win);
         c = getch();
-        if(c=='/') {
-
-            search_status(title_win,0);
-            move(nlines-2,startx+1);
-            fill_search_form(form,form_win);
-
-            search_index = regex_match(field_buffer(field[0],0),argv,argc,item_index(current_item(menu)),menu,menu_win,items);
-
-            search_status(title_win,search_index);
-        }
-        else {
-            name = main_loop(menu,form,form_win, &c);
-        }
+        name = main_loop(menu_win,title_win,menu,items,form,form_win,field,&c,argc,argv,nlines,startx,ncols);
     }
     /* Main Loop */
   
