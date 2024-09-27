@@ -12,6 +12,8 @@ int destroy_menu(MENU *menu);
 
 void display_menu(MENU *menu);
 
+int traverse_menu(MENU *menu, char *selected_item);
+
 void tui_deinit();
 
 #endif // !TUI_H

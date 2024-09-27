@@ -218,5 +218,6 @@ void free_dir(struct dir_data *data) {
     free(data->list[i]->name);
     free(data->list[i]);
   }
+  free(data->list);
   free(data);
 }
