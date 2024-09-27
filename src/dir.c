@@ -2,8 +2,17 @@
 #include "log.h"
 #include "stdheader.h"
 #include "structs.h"
+#include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+
+/* Function to change directory */
+int move_directory(char *dirpath) {
+  if (chdir(dirpath) == -1) {
+    logerror(__func__, "Error changing directory");
+    return -1;
+  }
+  return 0;
+}
 
 /* Function to get file count in directory */
 int file_count(char *dirname) {
@@ -23,7 +32,9 @@ int file_count(char *dirname) {
   /* get file count */
   entry = readdir(dir);
   while (entry != NULL) {
-    count++;
+    if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
+      count++;
+    }
     entry = readdir(dir);
   }
 
@@ -33,17 +44,31 @@ int file_count(char *dirname) {
   return count;
 }
 
-/* Function to add absolute path to selected string */
-void add_path(char *selfile) {
+/* Function stores the absolute path of the passed filename
+ * Space is allocated as necessary for the path and a pointer is returned to the
+ * created char array */
+char *store_absolute_path(char *filename) {
   /* Declaration */
-  char temp[FILE_SZ];
+  char *abspath;
+  char cwd[FILE_SZ];
 
-  /* Initialization */
-  strcpy(temp, selfile);
+  /* store the current working directory in a temporary buffer */
+  if (getcwd(cwd, sizeof(cwd)) == NULL) {
+    logerror(__func__, "Error in getcwd");
+    return NULL;
+  }
 
-  getcwd(selfile, 256);
-  selfile[strlen(selfile)] = '/';
-  strcat(selfile, temp);
+  /* +2 for '/' and '\0' */
+  abspath = (char *)malloc(strlen(filename) + strlen(cwd) + 2);
+  if (abspath == NULL) {
+    logerror(__func__, "Error mallocing space for storing file name");
+    return NULL;
+  }
+
+  /* create the absolute path string */
+  snprintf(abspath, strlen(filename) + strlen(cwd) + 2, "%s/%s", cwd, filename);
+
+  return abspath;
 }
 
 /* Function to read directory entry and return list of files and directories
@@ -66,6 +91,10 @@ struct dir_data *get_directory_entries(char *dirname) {
 
   /* allocating space for char array */
   data = (struct dir_data *)malloc(sizeof(struct dir_data));
+  if (data == NULL) {
+    logerror(__func__, "Error mallocing space for dir_data");
+    return NULL;
+  }
 
   /* get file count and allocate space */
   data->count = file_count(dirname);
@@ -74,10 +103,11 @@ struct dir_data *get_directory_entries(char *dirname) {
     return NULL;
   }
   data->list = (struct files **)calloc(data->count, sizeof(struct files *));
-
-  /* store current working directory */
-  data->cwd = (char *)malloc(FILE_SZ);
-  add_path(data->cwd);
+  if (data->list == NULL) {
+    logerror(__func__, "Error callocing space for files list");
+    free(data);
+    return NULL;
+  }
 
   /* loop to read dir stream from start */
   rewinddir(dir);
@@ -85,49 +115,58 @@ struct dir_data *get_directory_entries(char *dirname) {
 
   i = 0;
   while (entry != NULL) {
-    /* store file type and name in struct */
-    data->list[i] = (struct files *)malloc(sizeof(struct files));
+    /* check if entry is current directory */
+    if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
 
-    /* set file type */
-    switch (entry->d_type) {
-    case DT_BLK:
-      strcpy(data->list[i]->type, "BLOK");
-      break;
+      /* store file type and name in struct */
+      data->list[i] = (struct files *)malloc(sizeof(struct files));
+      if (data->list[i] == NULL) {
+        logerror(__func__, "Error mallocing space for files list item");
+        free(data);
+        return NULL;
+      }
 
-    case DT_CHR:
-      strcpy(data->list[i]->type, "CHAR");
-      break;
+      /* store selected file absoulte path */
+      data->list[i]->name = store_absolute_path(entry->d_name);
 
-    case DT_DIR:
-      strcpy(data->list[i]->type, "DIR");
-      break;
+      /* set file type */
+      switch (entry->d_type) {
+      case DT_BLK:
+        strcpy(data->list[i]->type, "BLK");
+        break;
 
-    case DT_FIFO:
-      strcpy(data->list[i]->type, "PIPE");
-      break;
+      case DT_CHR:
+        strcpy(data->list[i]->type, "CHAR");
+        break;
 
-    case DT_LNK:
-      strcpy(data->list[i]->type, "SLNK");
-      break;
+      case DT_DIR:
+        strcpy(data->list[i]->type, "DIR");
+        break;
 
-    case DT_REG:
-      strcpy(data->list[i]->type, "REG");
-      break;
+      case DT_FIFO:
+        strcpy(data->list[i]->type, "PIPE");
+        break;
 
-    case DT_SOCK:
-      strcpy(data->list[i]->type, "SOCK");
-      break;
+      case DT_LNK:
+        strcpy(data->list[i]->type, "SLNK");
+        break;
 
-    case DT_UNKNOWN:
-      strcpy(data->list[i]->type, "UNKO");
-      break;
+      case DT_REG:
+        strcpy(data->list[i]->type, "REG");
+        break;
+
+      case DT_SOCK:
+        strcpy(data->list[i]->type, "SOCK");
+        break;
+
+      case DT_UNKNOWN:
+        strcpy(data->list[i]->type, "UNKO");
+        break;
+      }
+
+      /* go to next entry */
+      i++;
     }
-
-    /* store file name */
-    strcpy(data->list[i]->name, entry->d_name);
-
-    /* go to next entry */
-    i++;
     entry = readdir(dir);
   }
 
@@ -137,17 +176,32 @@ struct dir_data *get_directory_entries(char *dirname) {
   return data;
 }
 
+/* Function to check if selected file is a directory */
+int dir_check(struct dir_data *data, int idx) {
+  if (strcmp(data->list[idx]->type, "DIR")) {
+    fprintf(stderr, "File selected is not a directory\n");
+    return -1;
+  }
+  return 0;
+}
+
 /* Function to change directory and repopulate struct entries */
-struct dir_data *change_directory(char *selfile, struct dir_data *data,
-                                  int count) {
+struct dir_data *change_directory(struct dir_data *data, int idx) {
+
+  /* Declaration */
+  char selfile[strlen(data->list[idx]->name)];
+
+  /* Initialization */
+  strcpy(selfile, data->list[idx]->name);
+
   /* change working dir */
-  if (chdir(selfile) == -1) {
-    logerror(__func__, "Error changing directory");
+  if (move_directory(selfile) != 0) {
+    logerror(__func__, "Error -> move_directory");
     return NULL;
   }
 
   /* repopulate list */
-  free_file_list(data->list, count);
+  free_dir(data);
   data = get_directory_entries(selfile);
   if (data == NULL) {
     logerror(__func__, "Error: get_directory_entries");
@@ -157,16 +211,14 @@ struct dir_data *change_directory(char *selfile, struct dir_data *data,
 }
 
 /* function to free struct containing file list */
-void free_file_list(struct files **list, int file_count) {
+void free_dir(struct dir_data *data) {
   /* Declaration */
   int i;
 
   /* free struct of file list */
-  for (i = 0; i < file_count; i++) {
-    free(list[i]);
+  for (i = 0; i < data->count; i++) {
+    free(data->list[i]->name);
+    free(data->list[i]);
   }
-  free(list);
+  free(data);
 }
-
-/* Function to free directory */
-void free_dir(struct dir_data *data) { free(data); }

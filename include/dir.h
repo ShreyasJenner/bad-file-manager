@@ -3,16 +3,17 @@
 
 #include "structs.h"
 
+int move_directory(char *dirpath);
+
 int file_count(char *dirname);
 
-void add_path(char *selfile);
+char *store_absolute_path(char *filename);
 
 struct dir_data *get_directory_entries(char *dirname);
 
-struct dir_data *change_directory(char *selfile, struct dir_data *dirs,
-                                  int count);
+int dir_check(struct dir_data *data, int idx);
 
-void free_file_list(struct files **list, int file_count);
+struct dir_data *change_directory(struct dir_data *dirs, int idx);
 
 void free_dir(struct dir_data *data);
 
