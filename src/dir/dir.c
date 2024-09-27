@@ -1,9 +1,7 @@
-#include "dir.h"
+#include "dir/dir.h"
+#include "dir/structs.h"
 #include "log.h"
 #include "stdheader.h"
-#include "structs.h"
-#include <stdio.h>
-#include <string.h>
 
 /* Function to change directory */
 int move_directory(char *dirpath) {
