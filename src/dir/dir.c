@@ -241,31 +241,6 @@ int dir_check(char *path) {
   return S_ISDIR(path_stat.st_mode);
 }
 
-/* Function to change directory and repopulate struct entries */
-struct dir_data *change_directory(struct dir_data *data, int idx) {
-
-  /* Declaration */
-  char selfile[strlen(data->list[idx]->absname)];
-
-  /* Initialization */
-  strcpy(selfile, data->list[idx]->absname);
-
-  /* change working dir */
-  if (move_directory(selfile) != 0) {
-    logerror(__func__, "Error -> move_directory");
-    return NULL;
-  }
-
-  /* repopulate list */
-  free_dir(data);
-  data = get_directory_entries(selfile);
-  if (data == NULL) {
-    logerror(__func__, "Error: get_directory_entries");
-  }
-
-  return data;
-}
-
 /* function to free struct containing file list */
 void free_dir(struct dir_data *data) {
   /* Declaration */
