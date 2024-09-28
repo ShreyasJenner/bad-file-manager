@@ -12,7 +12,7 @@ int destroy_menu(MENU *menu);
 
 void display_menu(MENU *menu);
 
-int traverse_menu(MENU *menu, char *selected_item);
+char *traverse_menu(MENU *menu, struct dir_data *data);
 
 void tui_deinit();
 

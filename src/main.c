@@ -3,8 +3,6 @@
 #include "log.h"
 #include "stdheader.h"
 #include "tui/tui.h"
-#include <curses.h>
-#include <string.h>
 
 /* Driver Code */
 int main(int argc, char **argv) {
@@ -17,19 +15,20 @@ int main(int argc, char **argv) {
   // NOTE: tui code
   //
   /* Declaration */
-  int i;
+  int flag;
   struct dir_data *data;
-  char selected_item[FILE_SZ];
+  char selected_item[FILE_SZ], *selected_item_ptr;
   MENU *menu;
 
   /* Initialization */
   strcpy(selected_item, argv[1]);
+  flag = 1;
 
   /* initialize tui */
   tui_init();
 
-  while (1) {
-    fprintf(stderr, "Selected items: %s\n", selected_item);
+  /* run the loop till a file that is not a directory is selected */
+  while (flag) {
     /* change working directory */
     if (move_directory(selected_item) != 0) {
       logerror(__func__, "Error -> move_directory");
@@ -53,23 +52,27 @@ int main(int argc, char **argv) {
     clear();
     display_menu(menu);
 
-    /* pause */
-    i = traverse_menu(menu, selected_item);
-    if (strcmp(data->list[i]->type, "DIR")) {
-      strcpy(selected_item, "q");
-    }
-    fprintf(stderr, "Selected items: %s\n", selected_item);
-    /* break if quit */
+    /* traverse menu */
+    selected_item_ptr = traverse_menu(menu, data);
 
-    /* reload menu and directory entries */
+    /* check if chosen item is a directory */
+    if (selected_item_ptr == NULL) {
+      fprintf(stderr, "Quit\n");
+      flag = 0;
+    } else if (!dir_check(selected_item_ptr)) {
+      fprintf(stderr, "Item: %s\n", selected_item_ptr);
+      flag = 0;
+    } else {
+      strcpy(selected_item, selected_item_ptr);
+      fprintf(stderr, "Dir: %s\n", selected_item);
+    }
+
+    /* destroy dir_data and menu */
     free_dir(data);
     if (destroy_menu(menu) != 0) {
       logerror(__func__, "Error -> destroy_menu");
       exit(1);
     }
-
-    if (!strcmp(selected_item, "q"))
-      break;
   }
 
   /* clean resources */

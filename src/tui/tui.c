@@ -11,6 +11,7 @@ void tui_init() {
   initscr();
   noecho();
   raw();
+  keypad(stdscr, TRUE);
 }
 
 /* Function to create a menu where each item is an entry of a directory */
@@ -30,7 +31,7 @@ MENU *create_menu(struct dir_data *data) {
 
   /* Create items */
   for (i = 0; i < data->count; i++) {
-    items[i] = new_item(data->list[i]->type, data->list[i]->name);
+    items[i] = new_item(data->list[i]->absname, data->list[i]->relname);
     if (items[i] == NULL) {
       perror("new_item: ");
       logerror(__func__, "Error -> new_item");
@@ -103,7 +104,7 @@ void display_menu(MENU *menu) {
 }
 
 /* Function handles menu traversal */
-int traverse_menu(MENU *menu, char *selected_item) {
+char *traverse_menu(MENU *menu, struct dir_data *data) {
   /* Declaration */
   int ch, flag;
 
@@ -115,9 +116,9 @@ int traverse_menu(MENU *menu, char *selected_item) {
     ch = getch();
 
     switch (ch) {
+    /* returns null */
     case 'q':
       flag = 0;
-      strcpy(selected_item, "q");
       break;
 
     case 'j':
@@ -136,14 +137,24 @@ int traverse_menu(MENU *menu, char *selected_item) {
       menu_driver(menu, REQ_LAST_ITEM);
       break;
 
-    /* key code for enter */
+    /* key code for enter
+     * return absolute path of selected file */
     case 10:
-      strcpy(selected_item, item_description(current_item(menu)));
-      return item_index(current_item(menu));
+      return data->list[item_index(current_item(menu))]->absname;
+      break;
+
+    /* key code for backspace
+     * return parent dir of file list displayed */
+    case KEY_BACKSPACE:
+      return data->parent_dir;
       break;
     }
+
     refresh();
   }
+
+  /* return null if q is pressed */
+  return NULL;
 }
 
 /* Function to close curses window */

@@ -11,7 +11,7 @@ char *store_absolute_path(char *filename);
 
 struct dir_data *get_directory_entries(char *dirname);
 
-int dir_check(struct dir_data *data, int idx);
+int dir_check(char *path);
 
 struct dir_data *change_directory(struct dir_data *dirs, int idx);
 

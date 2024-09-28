@@ -17,7 +17,8 @@
  */
 struct files {
   char type[FILE_TYPE_SZ];
-  char *name;
+  char *absname;
+  char *relname;
 };
 
 /*
@@ -29,6 +30,8 @@ struct files {
 struct dir_data {
   struct files **list;
   int count;
+
+  char *parent_dir;
 };
 
 #endif // !STRUCTS_H

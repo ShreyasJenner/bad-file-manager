@@ -56,17 +56,52 @@ char *store_absolute_path(char *filename) {
     return NULL;
   }
 
-  /* +2 for '/' and '\0' */
-  abspath = (char *)malloc(strlen(filename) + strlen(cwd) + 2);
+  /* if parent directory is / */
+  if (!strcmp(cwd, "/")) {
+    abspath = (char *)malloc(strlen(filename) + 2);
+  } else {
+    /* +2 for '/' and '\0' */
+    abspath = (char *)malloc(strlen(filename) + strlen(cwd) + 2);
+  }
   if (abspath == NULL) {
     logerror(__func__, "Error mallocing space for storing file name");
     return NULL;
   }
 
-  /* create the absolute path string */
-  snprintf(abspath, strlen(filename) + strlen(cwd) + 2, "%s/%s", cwd, filename);
+  /* copy the filename if filename parent is / */
+  if (!strcmp(cwd, "/")) {
+    snprintf(abspath, strlen(filename) + 2, "/%s", filename);
+  } else {
+    /* create the absolute path string */
+    snprintf(abspath, strlen(filename) + strlen(cwd) + 2, "%s/%s", cwd,
+             filename);
+  }
 
   return abspath;
+}
+
+/* Function to get the parent directory of the passed file absolute path */
+char *get_parent_dir_absolute_path(char *path) {
+  /* Declaration */
+  char *pardir;
+  int last_idx;
+
+  /* get last occurence of '/' */
+  last_idx = strrchr(path, '/') - path;
+
+  /* create string containing only parent path  and return it */
+  pardir = malloc(last_idx == 0 ? last_idx + 2 : last_idx + 1);
+  if (pardir == NULL) {
+    perror("malloc: ");
+    logerror(__func__, "Error allocating space for pardir -> malloc");
+    return NULL;
+  }
+
+  /* ternary operator to handle root directory */
+  strncpy(pardir, path, last_idx == 0 ? last_idx + 1 : last_idx);
+  pardir[last_idx + 1] = '\0';
+
+  return pardir;
 }
 
 /* Function to read directory entry and return list of files and directories
@@ -91,6 +126,13 @@ struct dir_data *get_directory_entries(char *dirname) {
   data = (struct dir_data *)malloc(sizeof(struct dir_data));
   if (data == NULL) {
     logerror(__func__, "Error mallocing space for dir_data");
+    return NULL;
+  }
+
+  /* allocate space for parent directory and store value in it */
+  data->parent_dir = get_parent_dir_absolute_path(dirname);
+  if (data->parent_dir == NULL) {
+    logerror(__func__, "Error -> get_parent_dir_absolute_path");
     return NULL;
   }
 
@@ -124,8 +166,20 @@ struct dir_data *get_directory_entries(char *dirname) {
         return NULL;
       }
 
-      /* store selected file absoulte path */
-      data->list[i]->name = store_absolute_path(entry->d_name);
+      /* store selected file absolute path */
+      data->list[i]->absname = store_absolute_path(entry->d_name);
+      if (data->list[i]->absname == NULL) {
+        logerror(__func__, "Error -> store_absolute_path");
+        return NULL;
+      }
+
+      /* store selected file name */
+      data->list[i]->relname = malloc(strlen(entry->d_name) + 1);
+      if (data->list[i]->relname == NULL) {
+        logerror(__func__, "Error mallocing space for rel_name");
+        return NULL;
+      }
+      strcpy(data->list[i]->relname, entry->d_name);
 
       /* set file type */
       switch (entry->d_type) {
@@ -174,23 +228,27 @@ struct dir_data *get_directory_entries(char *dirname) {
   return data;
 }
 
-/* Function to check if selected file is a directory */
-int dir_check(struct dir_data *data, int idx) {
-  if (strcmp(data->list[idx]->type, "DIR")) {
-    fprintf(stderr, "File selected is not a directory\n");
-    return -1;
-  }
-  return 0;
+/* Function to check if selected file is a directory
+ * Absolute file path is passed to it as a string
+ * Returns 1 if it is a directory */
+int dir_check(char *path) {
+  /* Declaration */
+  struct stat path_stat;
+
+  /* check if passed absolute path is a directory */
+  stat(path, &path_stat);
+
+  return S_ISDIR(path_stat.st_mode);
 }
 
 /* Function to change directory and repopulate struct entries */
 struct dir_data *change_directory(struct dir_data *data, int idx) {
 
   /* Declaration */
-  char selfile[strlen(data->list[idx]->name)];
+  char selfile[strlen(data->list[idx]->absname)];
 
   /* Initialization */
-  strcpy(selfile, data->list[idx]->name);
+  strcpy(selfile, data->list[idx]->absname);
 
   /* change working dir */
   if (move_directory(selfile) != 0) {
@@ -215,9 +273,11 @@ void free_dir(struct dir_data *data) {
 
   /* free struct of file list */
   for (i = 0; i < data->count; i++) {
-    free(data->list[i]->name);
+    free(data->list[i]->absname);
+    free(data->list[i]->relname);
     free(data->list[i]);
   }
+  free(data->parent_dir);
   free(data->list);
   free(data);
 }
