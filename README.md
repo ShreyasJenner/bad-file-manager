@@ -1,13 +1,18 @@
-ncurses library to display file manager
-used by file-manager
+# Shitty File Manager
 
-### Working
-- endwin isn't called ==> resolves flickering issues
-- color attributes added to diff b/w files and dirs
-- first character of argc is expected to be either 'D' or 'F' ==> used to diff b/w colors
+A tui-based file manager that somehow manages to work
 
-### To-do:
-- [x] add color support for directories
-- [x] re-render when resizing terminal
-- [x] file indicator dynamic replacement or multi col menu 
-- [x] search support
+Vim-key bindings are used to traverse the menu 
+The program spawns a terminal in the directory it is in, when it exits
+
+## Usage
+- run build.sh while in the project directory, after which sfm can be called from anywhere to see the file manager tui
+
+- calling sfm directly
+
+![](data/example.webp)
+- An directory name can be passed as argument. 
+The program will start running from that directory
+
+![](data/example_arg.webp)
+- xdg-open is used to open the files
