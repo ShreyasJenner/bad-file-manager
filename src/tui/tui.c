@@ -12,6 +12,14 @@ void tui_init() {
   noecho();
   raw();
   keypad(stdscr, TRUE);
+
+  /* create color pairs */
+  // NOTE: use for adding color to menu items
+  //  To set color for specific items, manual printing needs to be done of items
+  //  instead of using menu update
+  start_color();
+  init_pair(1, COLOR_RED, COLOR_BLACK);
+  init_pair(1, COLOR_WHITE, COLOR_BLACK);
 }
 
 /* Function to create a menu where each item is an entry of a directory */
@@ -31,7 +39,7 @@ MENU *create_menu(struct dir_data *data) {
 
   /* Create items */
   for (i = 0; i < data->count; i++) {
-    items[i] = new_item(data->list[i]->absname, data->list[i]->relname);
+    items[i] = new_item(data->list[i]->relname, data->list[i]->absname);
     if (items[i] == NULL) {
       perror("new_item: ");
       logerror(__func__, "Error -> new_item");
@@ -48,6 +56,9 @@ MENU *create_menu(struct dir_data *data) {
     return NULL;
   }
 
+  /* hide menu descriptions  */
+
+  menu_opts_off(menu, O_SHOWDESC);
   return menu;
 }
 

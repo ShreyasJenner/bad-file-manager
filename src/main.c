@@ -55,16 +55,18 @@ int main(int argc, char **argv) {
     /* traverse menu */
     selected_item_ptr = traverse_menu(menu, data);
 
-    /* check if chosen item is a directory */
     if (selected_item_ptr == NULL) {
-      fprintf(stderr, "Quit\n");
+      /* print current directory on quit */
+      fprintf(stderr, "DIR\n%s\n", selected_item);
       flag = 0;
     } else if (!dir_check(selected_item_ptr)) {
-      fprintf(stderr, "Item: %s\n", selected_item_ptr);
+      /* print selected file */
+      fprintf(stderr, "ITEM\n%s\n", selected_item_ptr);
       flag = 0;
     } else {
+      /* check if chosen item is a directory */
       strcpy(selected_item, selected_item_ptr);
-      fprintf(stderr, "Dir: %s\n", selected_item);
+      // fprintf(stderr, "Dir: %s\n", selected_item);
     }
 
     /* destroy dir_data and menu */

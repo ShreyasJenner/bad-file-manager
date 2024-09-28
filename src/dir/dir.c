@@ -99,7 +99,7 @@ char *get_parent_dir_absolute_path(char *path) {
 
   /* ternary operator to handle root directory */
   strncpy(pardir, path, last_idx == 0 ? last_idx + 1 : last_idx);
-  pardir[last_idx + 1] = '\0';
+  pardir[last_idx] = '\0';
 
   return pardir;
 }
