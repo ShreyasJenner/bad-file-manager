@@ -28,5 +28,5 @@ if [[ "${lines[0]}" == "DIR" ]]; then
   $TERM &
 else
   # else open file
-  xdg-open "${lines[1]}"
+  xdg-open "${lines[1]}" &
 fi
