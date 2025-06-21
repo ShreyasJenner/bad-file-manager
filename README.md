@@ -1,6 +1,6 @@
 # Bad File Manager
 
-A tui-based file manager that somehow manages to work. I wouldn't recommend this to anyone in good faith
+A tui-based file manager that somehow manages to work. Not recommended for daily use
 
 Vim-key bindings are used to traverse the menu 
 The program spawns a terminal in the directory it is in, when it exits
